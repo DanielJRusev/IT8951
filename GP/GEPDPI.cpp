@@ -13,7 +13,7 @@
 
 
 void SleepMs(int ms);
-void sendImage(char *filename, int cdc);
+int sendImage(char *filename, int cdc);
 
 unsigned char RESOLUTION[] = { 0xA8, 0x00, 0x0C, 0x01, 0x00, 0x00, 0x06, 0x40, 0x04, 0xB0, 0x00, 0x00, 0x00 };  	//Display Resolution 1600 x 1200
 unsigned char VCOM[] = { 0xA8, 0x00, 0x0A, 0x03, 0x00, 0x00, 0xf9, 0x0C, 0x00, 0x00, 0x00 };              			//VCOM -1780 mV    = 0xf830 
@@ -69,60 +69,28 @@ int main(int argc, char ** argv) {
 		SleepMs(10);
 		write(cdc_filestream, BUS,			0x09);
 
-		SleepMs(100);
+	SleepMs(100);
 
-		write(cdc_filestream, CLEAR_SCREEN, 0x09);
+	write(cdc_filestream, CLEAR_SCREEN, 0x09);
 
-		SleepMs(500);
+	SleepMs(500);
+	int res = 0;
+	res = sendImage(argv[1], cdc_filestream);
+	if(res <0){
+		close(cdc_filestream);
+		perror("Write failed - sendImage");
+		return -1;
+	}
 
-		//sendImage(argv[1], cdc_filestream);
-		//SleepMs(10);
-		//int n = write(cdc_filestream, SHOW_THE_PICTURE, 0x09);
-				
-		//sendImage("/home/pi/Desktop/1280x800/1.jpg", cdc_filestream);
-		sendImage(argv[1], cdc_filestream);
-				
-	// 	sendImage( (char*)("1.jpg"), cdc_filestream);  // Open file 
-		SleepMs(10);
+	SleepMs(10);
 	int n = write(cdc_filestream, SHOW_THE_PICTURE, 0x09);
-	// 	SleepMs(2000);
-
-	// 	sendImage((char*)("2.jpg"), cdc_filestream);  // Open file 
-	// 	SleepMs(10);
-	//     n = write(cdc_filestream, SHOW_THE_PICTURE, 0x09);
-	// 	SleepMs(2000);
-		
-	// 	sendImage((char*)("3.jpg"), cdc_filestream);  // Open file 
-	// 	SleepMs(10);
-	// 	n = write(cdc_filestream, SHOW_THE_PICTURE, 0x09);
-	// 	SleepMs(2000);
-						
-	// 	sendImage((char*)("4.jpg"), cdc_filestream);  // Open file 
-	// 	SleepMs(10);
-	// 	n = write(cdc_filestream, SHOW_THE_PICTURE, 0x09);
-	// 	SleepMs(2000);
-		
-		
-		SleepMs(500);
-
-	// 	n = write(cdc_filestream, CLEAR_SCREEN, 0x09);
-	// 	SleepMs(500);
-
-				
-	// 	n = write(cdc_filestream, BLACK_SCREEN, 0x09);
-	// 	SleepMs(500);
-
-		
-	// 	n = write(cdc_filestream, WHITE_SCREEN, 0x09);
-	// 	SleepMs(500);
-
+	SleepMs(2000);
 	
-	// if (n < 0) {
-	// 	perror("Write failed - ");
-	// 	return -1;
-	// }
-
-
+	if (n < 0) {
+		close(cdc_filestream);
+		perror("Write failed - ");
+		return -1;
+	}
 	
 	// Don't forget to clean up
 	close(cdc_filestream);
@@ -130,63 +98,73 @@ int main(int argc, char ** argv) {
 }
 
 
-void sendImage(char *filename, int cdc)
+int sendImage(char *filename, int cdc)
 {
 	int width, height, bpp;
-
 	uint8_t* image = stbi_load(filename, &width, &height, &bpp, 1);
 
-	if (!image) {
-		fprintf(stderr, "Couldn't load image.\n");
-	}
-	else
-	{
-		if ((width > 1600) || (height > 1200))
-		{
-			printf("Image size is to big \n");
+	try {
+
+		if (!image) {
+			fprintf(stderr, "Couldn't load image.\n");
+			stbi_image_free(image);
+			return -1;
 		}
 		else
 		{
-			unsigned char frame[(width/2) + 8];
-			frame[0] = 0xA8;
-			frame[1] = ((8 + (width / 2)) >> 8) & 0xFF;  // FrameLength HB
-			frame[2] = ((8 + (width / 2))     ) & 0xFF;  // FrameLength LB
-			frame[3] = 0x07;
-			frame[4] = 0x00;
-			frame[5] = 0x00;
-
-			unsigned char IMAGE_RESOLUTION[12] = { 0xA8, 0x00, 0x0C, 0x02};      //Image Resolution 
-			
-			IMAGE_RESOLUTION[6] = (width >> 8)  & 0x0F;
-			IMAGE_RESOLUTION[7] =  width        & 0xFF;
-
-			IMAGE_RESOLUTION[8] = (height >> 8) & 0x0F;
-			IMAGE_RESOLUTION[9] =  height       & 0xFF;
-
-			write(cdc, IMAGE_RESOLUTION, sizeof(IMAGE_RESOLUTION));
-
-			SleepMs(5);
-			
-			for (int i = 0; i < height; i++)
+			if ((width > 2200) || (height > 1650))
 			{
-				int c = 6;
-				for (int b = 0; b < width;)
+				printf("Image size is to big \n");
+				stbi_image_free(image);
+				return -1;
+			}
+			else
+			{
+				unsigned char frame[(width/2) + 8];
+				frame[0] = 0xA8;
+				frame[1] = ((8 + (width / 2)) >> 8) & 0xFF;  // FrameLength HB
+				frame[2] = ((8 + (width / 2))     ) & 0xFF;  // FrameLength LB
+				frame[3] = 0x07;
+				frame[4] = 0x00;
+				frame[5] = 0x00;
+
+				unsigned char IMAGE_RESOLUTION[12] = { 0xA8, 0x00, 0x0C, 0x02};      //Image Resolution 
+				
+				IMAGE_RESOLUTION[6] = (width >> 8)  & 0x0F;
+				IMAGE_RESOLUTION[7] =  width        & 0xFF;
+
+				IMAGE_RESOLUTION[8] = (height >> 8) & 0x0F;
+				IMAGE_RESOLUTION[9] =  height       & 0xFF;
+
+				write(cdc, IMAGE_RESOLUTION, sizeof(IMAGE_RESOLUTION));
+
+				SleepMs(5);
+				
+				for (int i = 0; i < height; i++)
 				{
-					frame[c]     =  image[(i * width) + b++]       & 0xF0;
-					frame[c++]  |= (image[(i * width) + b++] >> 4) & 0x0F;
+					int c = 6;
+					for (int b = 0; b < width;)
+					{
+						frame[c]     =  image[(i * width) + b++]       & 0xF0;
+						frame[c++]  |= (image[(i * width) + b++] >> 4) & 0x0F;
+						
+					}
+
+					frame[4] = (height  >> 8) & 0x0F;    // DataCounter HB
+					frame[5] =  height        & 0xFF;    // DataCounter LB
+
+					write(cdc, frame, 8 + (width / 2));
+					SleepMs(10);                         //Wait 10 milliseconds for recive Package 
 					
 				}
-
-				frame[4] = (height  >> 8) & 0x0F;    // DataCounter HB
-				frame[5] =  height        & 0xFF;    // DataCounter LB
-
-				write(cdc, frame, 8 + (width / 2));
-				SleepMs(10);                         //Wait 10 milliseconds for recive Package 
-				
 			}
+			stbi_image_free(image);
+			return 0;
 		}
 
+	} catch (const std::exception& e) { 
 		stbi_image_free(image);
+		return 0;		
 	}
 }
 
