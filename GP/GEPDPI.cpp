@@ -105,22 +105,22 @@ int main(int argc, char ** argv) {
 		
 		SleepMs(500);
 
-		n = write(cdc_filestream, CLEAR_SCREEN, 0x09);
-		SleepMs(500);
+	// 	n = write(cdc_filestream, CLEAR_SCREEN, 0x09);
+	// 	SleepMs(500);
 
 				
-		n = write(cdc_filestream, BLACK_SCREEN, 0x09);
-		SleepMs(500);
+	// 	n = write(cdc_filestream, BLACK_SCREEN, 0x09);
+	// 	SleepMs(500);
 
 		
-		n = write(cdc_filestream, WHITE_SCREEN, 0x09);
-		SleepMs(500);
+	// 	n = write(cdc_filestream, WHITE_SCREEN, 0x09);
+	// 	SleepMs(500);
 
 	
-	if (n < 0) {
-		perror("Write failed - ");
-		return -1;
-	}
+	// if (n < 0) {
+	// 	perror("Write failed - ");
+	// 	return -1;
+	// }
 
 
 	
